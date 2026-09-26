@@ -1,0 +1,738 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>E-Ink Info Dashboard &mdash; Interactive Tour</title>
+<style>
+  :root { --bg:#0e1116; --accent:#94a3b8; --accent-deep:#64748B; --panel:#0000002e;
+          --text:#e6e6e6; --muted:#9aa0a6; --good:#4ade80; --bad:#f87171; --warn:#fbbf24; }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text);line-height:1.55}
+  header{padding:18px 24px;border-bottom:1px solid #ffffff14}
+  header h1{margin:0;font-size:20px;color:var(--accent)}
+  header p{margin:6px 0 0;color:var(--muted);font-size:13px}
+  header .persist-note{margin-top:4px;font-size:11px;color:var(--muted);opacity:.8}
+  .badge{display:inline-block;background:var(--accent-deep);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;margin-left:8px}
+  .pills{display:flex;gap:6px;flex-wrap:wrap;padding:12px 24px;border-bottom:1px solid #ffffff14}
+  .pill{font-size:12px;padding:4px 10px;border:1px solid #ffffff22;border-radius:999px;color:var(--muted);cursor:pointer;background:transparent}
+  .pill.active{background:var(--accent);color:#0e1116;font-weight:600;border-color:var(--accent)}
+  .pill.done{border-color:var(--good);color:var(--good)}
+  .pill.tool{border-style:dashed}
+  main{display:grid;grid-template-columns:1fr 1fr;min-height:60vh}
+  @media (max-width:880px){main{grid-template-columns:1fr}.lesson{border-right:none!important;border-bottom:1px solid #ffffff14}}
+  .lesson,.practice{padding:22px 24px}
+  .lesson{border-right:1px solid #ffffff14}
+  .lesson h2{color:var(--accent);margin-top:0;font-size:18px}
+  .lesson ul{padding-left:18px}.lesson li{margin:6px 0}
+  .trap{border-left:3px solid var(--warn);background:#fbbf2410;padding:10px 12px;border-radius:4px;margin:12px 0;font-size:14px}
+  .trap b{color:var(--warn)}
+  .worked{border-left:3px solid var(--accent-deep);background:#ffffff08;padding:10px 12px;border-radius:4px;margin:12px 0;font-size:14px}
+  figure{margin:14px 0}figcaption{color:var(--muted);font-size:12px;margin-top:6px}
+  .practice h3{margin-top:0;color:var(--accent);font-size:16px}
+  .nav{display:flex;gap:10px;align-items:center;padding:14px 24px;border-top:1px solid #ffffff14}
+  button{font:inherit}
+  button.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent);border-radius:8px;padding:8px 14px;font-weight:600;cursor:pointer}
+  button.ghost:disabled{opacity:.35;cursor:not-allowed}
+  .counter{color:var(--muted);font-size:13px;margin-left:auto}
+  .qc{margin-top:16px;border-top:1px solid #ffffff14;padding-top:14px}
+  .qc h4{margin:0 0 8px;font-size:14px;color:var(--accent)}
+  .opt{all:unset;display:flex;align-items:center;gap:8px;padding:8px 10px;margin:4px 0;border:1px solid #ffffff1a;border-radius:8px;cursor:pointer;font-size:14px}
+  .opt:hover{border-color:var(--accent)}
+  .opt.correct{border-color:var(--good);background:#4ade8018}
+  .opt.wrong{border-color:var(--bad);background:#f8717118}
+  .opt[disabled]{cursor:default}
+  .explain{display:none;margin-top:8px;font-size:13px;color:var(--muted);border-left:2px solid var(--accent-deep);padding-left:10px}
+  .links{margin-top:14px;font-size:13px}
+  .links a{color:var(--accent);display:inline-block;margin:3px 0}
+  .links .kind{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em;margin-right:6px}
+  .video-card{display:flex;gap:10px;align-items:center;border:1px solid #ffffff1a;border-radius:8px;padding:8px;text-decoration:none;color:var(--text);margin-top:6px}
+  .video-card:hover{border-color:var(--accent)}
+  .video-card-thumb{width:96px;height:54px;border-radius:4px;background-size:cover;background-position:center;position:relative;flex-shrink:0}
+  .video-card-play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;text-shadow:0 0 6px #000}
+  .video-card-info b{display:block;font-size:13px}
+  .video-card-info span{color:var(--muted);font-size:12px}
+  table.cheat{border-collapse:collapse;width:100%;font-size:13px;margin-top:8px}
+  table.cheat td,table.cheat th{border:1px solid #ffffff14;padding:6px 8px;text-align:left}
+  table.cheat th{color:var(--accent)}
+  code{background:#ffffff12;padding:1px 5px;border-radius:3px;font-family:ui-monospace,monospace;font-size:13px}
+  .quiz-wrap{padding:22px 24px;border-top:1px solid #ffffff14}
+  .q{margin-bottom:18px}.q p{font-weight:600;margin:0 0 6px}
+  #score{font-weight:700;color:var(--accent)}
+  .flash-stage{display:flex;justify-content:center;padding:18px 0;perspective:1200px}
+  .flash-card{width:min(420px,90%);height:190px;position:relative;cursor:pointer;transform-style:preserve-3d;transition:transform .45s}
+  .flash-card.flipped{transform:rotateY(180deg)}
+  .flash-face{position:absolute;inset:0;backface-visibility:hidden;border:1px solid #ffffff22;border-radius:12px;
+              display:flex;align-items:center;justify-content:center;text-align:center;padding:18px;font-size:16px}
+  .flash-front{background:#ffffff08;color:var(--text);font-weight:700}
+  .flash-back{background:var(--accent-deep);color:#fff;transform:rotateY(180deg);font-size:14px;font-weight:400}
+  .flash-controls{display:flex;gap:10px;align-items:center;justify-content:center;margin-top:8px}
+  .match-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+  .match-col{display:flex;flex-direction:column;gap:8px}
+  .match-btn{all:unset;padding:10px 12px;border:1px solid #ffffff1a;border-radius:8px;cursor:pointer;font-size:13px;text-align:left}
+  .match-btn:hover{border-color:var(--accent)}
+  .match-btn.sel{border-color:var(--accent);background:#94a3b818}
+  .match-btn.matched{border-color:var(--good);background:#4ade8018;opacity:.55;cursor:default}
+  .match-btn.wrong{border-color:var(--bad);background:#f8717118}
+  .eink-section{border:1px solid #ffffff1a;border-radius:8px;padding:14px 16px;margin-top:14px}
+  .eink-section h4{margin:0 0 8px;color:var(--accent);font-size:14px}
+  .eink-strip{display:flex;gap:2px;margin:10px 0}
+  .eink-px{width:22px;height:36px;border:1px solid #ffffff22;flex-shrink:0}
+  .eink-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:13px;margin:8px 0}
+  .eink-readout{background:#000;border-radius:6px;padding:10px 12px;margin-top:8px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;color:#94a3b8}
+  .eink-readout b{color:var(--accent)}
+  .eink-log{max-height:130px;overflow-y:auto;font-size:11.5px;color:var(--muted);margin-top:8px;font-family:ui-monospace,Menlo,Consolas,monospace}
+  .eink-log div{padding:2px 0;border-bottom:1px solid #ffffff0c}
+  .gauge-bar{height:10px;border-radius:5px;background:#ffffff14;overflow:hidden;margin-top:4px}
+  .gauge-fill{height:100%;background:linear-gradient(90deg,var(--good),var(--warn),var(--bad));transition:width .2s}
+  .report-card{border:1px solid #ffffff22;border-radius:10px;padding:20px 22px;max-width:560px}
+  .report-card h4{margin:16px 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+  .report-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #ffffff10;font-size:14px}
+  .report-row .grade{font-weight:700}
+  .grade-A{color:var(--good)} .grade-B{color:#a3e635} .grade-C{color:var(--warn)} .grade-D,.grade-F{color:var(--bad)} .grade-dash{color:var(--muted)}
+  .report-overall{display:flex;align-items:baseline;gap:10px;margin:14px 0}
+  .report-overall .big{font-size:40px;font-weight:800}
+  #printBtn{margin-top:16px}
+  @media print{
+    header .persist-note, .pills, #nav, .report-card #printBtn{display:none!important}
+    body{background:#fff;color:#111}
+    .report-card{border-color:#ccc;max-width:none}
+    .report-row{border-bottom-color:#ddd}
+  }
+</style></head>
+<body>
+<header>
+  <h1>E-Ink Info Dashboard <span class="badge">Chain K &middot; Hands-on</span></h1>
+  <p>Bistable e-ink fundamentals &rarr; partial vs full refresh &amp; ghosting &rarr; low-power service
+     design (systemd timers) &rarr; layout for slow-updating screens. Trigger real ghosting and clear
+     it with a full refresh, and watch the actual convergence math, in the
+     <b>Refresh &amp; Ghosting Simulator</b> tab before it's a real panel you're waiting on.</p>
+  <p class="persist-note">Progress (quick checks, quiz score, flashcards known) saves in this browser
+     only &mdash; localStorage, not an account. Clearing site data or switching browsers resets it.</p>
+</header>
+
+<div class="pills" id="pills"></div>
+
+<main>
+  <section class="lesson" id="lesson"></section>
+  <section class="practice" id="practice"></section>
+</main>
+
+<div class="nav" id="nav">
+  <button class="ghost" id="prev">&larr; Previous</button>
+  <button class="ghost" id="next">Next &rarr;</button>
+  <span class="counter" id="counter"></span>
+</div>
+
+<div class="quiz-wrap" id="quizWrap" style="display:none">
+  <h3 style="color:var(--accent);margin-top:0">Check Your Understanding</h3>
+  <div id="quiz"></div>
+  <p>Score: <span id="score">0</span> / <span id="total"></span></p>
+</div>
+
+<div class="quiz-wrap" id="toolWrap" style="display:none"></div>
+
+<script>
+const LESSONS = [
+{
+  short:"E-ink fundamentals",
+  title:"Bistable e-ink: why it holds an image with zero power",
+  body:`<p>E-ink is the opposite of every screen most projects reach for: once an image is set, it stays
+  there — with the Pi powered off entirely — because of how the display physically works, not because
+  of any clever software trick.</p>
+  <ul><li>Each pixel is a microcapsule containing charged black and white particles suspended in fluid.
+  Applying an electric field moves the particles of one color to the top surface, making that pixel
+  appear black or white (or a grey level, on panels that support it).</li>
+  <li>This is <b>bistable</b>: once the particles have moved into position, they stay there with no
+  power at all. Power is only needed to <i>change</i> the image, never to hold it — the exact opposite
+  of an LCD or OLED, which needs continuous power just to keep displaying anything.</li>
+  <li>E-ink is also <b>reflective</b>, not backlit — it uses ambient light the way real paper does,
+  which is why it stays legible in direct sunlight and doesn't strain eyes the way a backlit screen
+  can.</li></ul>
+  <div class="trap"><b>The trap — a listed Common Mistake:</b> buying an "e-paper" listing with no
+  controller chip specified and no driver library linked. E-ink panels vary enough between controllers
+  that a generic, undocumented one can mean days of driver debugging for a beginner — the controller
+  chip and its driver library matter as much as the panel itself.</div>
+  <div class="worked"><b>Worked:</b> unplug the Pi entirely once an image is drawn — the panel keeps
+  showing it, unchanged, indefinitely. The exact same test on any LCD or laptop screen goes black the
+  instant power is cut, which is the concrete, checkable difference bistability actually means.</div>`,
+  practice:`<h3>Practice — Refresh & Ghosting Simulator</h3>
+  <ol><li>Open the <b>Refresh &amp; Ghosting Simulator</b> tab. Notice the "static" pixels never need
+  re-driving once set — only the "dynamic" region actually needs periodic updates.</li></ol>`,
+  quick:{ q:"Why does an e-ink panel still show its image with the board powering it fully switched off?",
+    choices:["It's bistable — the charged particles stay in position with zero power once moved there; power is only needed to change the image, not hold it","The panel has its own hidden battery inside every unit","E-ink panels are actually printed paper with no electronics at all","The image is cached in the board's RAM and redrawn from memory on power-up"],
+    a:0, ex:"Bistability is a physical property of the particle/fluid system, not a software cache — the particles hold their position with no applied power at all until the next deliberate refresh." },
+  links:[
+    {type:"read", label:"E Ink Corporation — Electrophoretic Technology", url:"https://www.eink.com/technology.html"}
+  ]
+},
+{
+  short:"Partial vs full refresh",
+  title:"Partial vs full refresh: the real ghosting tradeoff",
+  body:`<p>Two different ways to update the panel exist for a reason — and understanding the actual
+  tradeoff between them is most of what makes an e-ink project usable instead of frustrating.</p>
+  <ul><li>A <b>full refresh</b> clears the whole panel (often visibly flashing) and redraws it
+  precisely — every pixel lands exactly where it should, with zero residual. It's also slow: several
+  seconds, not milliseconds.</li>
+  <li>A <b>partial refresh</b> updates just a region, much faster — but the drive waveform doesn't
+  fully migrate every particle in one pass. Each partial refresh only moves a pixel <i>part</i> of the
+  way toward its target, not all the way.</li>
+  <li>Against a target that <b>stops changing</b>, repeated partial refreshes do eventually converge —
+  the leftover error shrinks by a fixed fraction each time. But against a target that keeps changing
+  (a clock digit updating every minute), the error never fully clears — that's <b>ghosting</b>: faint
+  remnants of previous content still visible underneath the current one.</li></ul>
+  <div class="trap"><b>The trap — a listed Common Mistake:</b> ghosting from skipping periodic full
+  refreshes in favor of partial-only updates. The fix isn't "a few more partial refreshes" on a target
+  that keeps moving — it's a periodic full refresh (hourly or daily is typical), which clears
+  everything in one exact pass regardless of how much ghosting has built up.</div>
+  <div class="worked"><b>Worked:</b> with a 65% partial-refresh gain, a pixel converges to within 5% of
+  a <i>fixed</i> target in 3 refreshes — but if that same pixel's target changes again after just 1
+  refresh (like a real changing clock digit), it never gets the chance to converge at all. Only a full
+  refresh actually resets it.</div>`,
+  practice:`<h3>Practice — Refresh & Ghosting Simulator</h3>
+  <ol><li>Advance the simulated clock several times using <b>only</b> partial refresh and watch the
+  ghosting gauge climb. Then trigger a full refresh and watch it drop to zero in one step.</li></ol>`,
+  quick:{ q:"A fast-changing region of an e-ink display is showing visible ghosting after many partial-only refreshes. What actually fixes it?",
+    choices:["A periodic full refresh, which resets every pixel exactly — not more partial refreshes on a target that keeps changing","Increasing the partial refresh rate even further","Switching the panel to a higher grey-scale mode","Restarting the Raspberry Pi"],
+    a:0, ex:"Partial refresh against a constantly-changing target never fully converges — only a full refresh snaps every pixel to its exact target in one pass, clearing accumulated ghosting regardless of how it built up." },
+  links:[
+    {type:"read", label:"Ben Krasnow — Fast partial refresh on a 4.2\" e-paper display", url:"https://benkrasnow.blogspot.com/2017/10/fast-partial-refresh-on-42-e-paper.html"}
+  ]
+},
+{
+  short:"Low-power service design",
+  title:"A systemd timer, not a busy-loop: designing a service that mostly sleeps",
+  body:`<p>This display only genuinely needs to change a handful of times a day — weather updates every
+  15-30 minutes, calendar/transit on a similar cadence, a clock region once a minute at most. The
+  service driving it should reflect that, not fight it.</p>
+  <ul><li>A <b>systemd timer</b> paired with a <b>oneshot service</b> (fetch data, render, push to the
+  panel, exit) is the right shape: the timer fires on a schedule, the service does one redraw cycle and
+  stops — no process sitting in memory between updates.</li>
+  <li>Compared to a plain cron job, a systemd timer can wait for a dependency (like the network) to
+  actually be ready before firing, and — importantly for a Pi that gets powered off and on — it can
+  catch up on a missed scheduled run after boot, instead of just silently skipping it the way cron
+  does.</li>
+  <li>Compared to a busy-loop (<code>while True: fetch(); render(); sleep(n)</code>), a timer-triggered
+  oneshot service uses real power and API quota only when something might actually need to change —
+  the "small always-on service" idea from Raspberry-Pi-Tinkering, applied deliberately here.</li></ul>
+  <div class="trap"><b>The trap — a listed Common Mistake:</b> treating this like a normal display that
+  redraws continuously. E-ink is designed to be written rarely, not polled — a busy-loop or an
+  overly-frequent cron job wastes power and API calls for information that isn't changing that fast in
+  the first place.</div>
+  <div class="worked"><b>Worked:</b> a naive loop polling a weather API every 5 seconds makes over
+  17,000 unnecessary requests a day for data that realistically changes every 15-30 minutes; a systemd
+  timer firing every 15 minutes gets the same practical freshness with under 100 requests a day.</div>`,
+  practice:`<h3>Practice — design the schedule</h3>
+  <ol><li>Sketch two systemd timers for a real layout: one firing every 15-30 minutes for
+  weather/calendar (full refresh), and a separate, faster one for a clock region (partial refresh).</li></ol>`,
+  quick:{ q:"Why does a systemd timer handle a Raspberry Pi that was powered off at the scheduled time better than a plain cron job would?",
+    choices:["A systemd timer can catch up on a missed scheduled run after boot; a cron job simply skips it if the machine wasn't on at that moment","cron jobs run faster than systemd timers","systemd timers require a permanent internet connection to function at all","There's no real difference — both handle missed runs identically"],
+    a:0, ex:"This is a genuine, documented behavioral difference: systemd timers can be configured to run a missed job on the next boot, while a classic cron job that wasn't running at the scheduled minute just never fires for that occurrence." },
+  links:[
+    {type:"watch", vid:"DixhIrgMy3M", channel:"tutoriaLinux", label:"Introduction to systemd timers", url:"https://www.youtube.com/watch?v=DixhIrgMy3M"}
+  ]
+},
+{
+  short:"Layout for slow-updating screens",
+  title:"Designing a layout for a screen that updates slowly",
+  body:`<p>This is meant to be glanced at, not interacted with — closer to a picture frame than a
+  monitor. That changes what "good layout" even means here.</p>
+  <ul><li>Design for <b>information hierarchy at a glance</b>: the thing you'd want to see first (time,
+  or the next calendar event) should be the most visually prominent, not buried in a grid of equally-
+  weighted widgets.</li>
+  <li><b>Deliberately split the layout into regions</b> matched to how often each one's content
+  actually changes: a large area for weather/calendar/transit (updates every 15-30 minutes, full
+  refresh) and a small dedicated area for a clock or similar fast-changing element (partial refresh,
+  much more often).</li>
+  <li><b>Panel size trades off against content density</b>: a 2.13" panel is realistically clock/status
+  only; a 7.5" panel supports a full weather+calendar+transit layout, at the cost of a slower full
+  refresh simply because there's more panel to redraw.</li></ul>
+  <div class="trap"><b>The trap — a listed Common Mistake:</b> redrawing the entire panel with a full
+  refresh for every small change, needlessly paying the multi-second full-refresh cost instead of
+  designing a dedicated partial-refresh region for whatever actually changes often.</div>
+  <div class="worked"><b>Worked:</b> a real layout split — the top 80% of the panel (weather icon,
+  calendar events, transit times) redrawn via full refresh every 15 minutes, and a small clock strip
+  along the bottom redrawn via partial refresh once a minute — gets both a clean, ghost-free main
+  layout and a responsive clock, without ever paying the full-refresh cost once a minute.</div>`,
+  practice:`<h3>Practice — sketch the layout</h3>
+  <ol><li>Sketch your own panel's regions on paper: which parts are "rarely changes" (full refresh) and
+  which are "changes often" (partial refresh), and roughly how often each one actually needs to
+  update.</li></ol>`,
+  quick:{ q:"Why does splitting a layout into deliberate regions (matched to how often each changes) matter, instead of always refreshing the whole panel the same way?",
+    choices:["It avoids paying the full refresh's multi-second cost for changes that only affect a small, fast-changing area, while still using full refresh where it's actually needed to prevent ghosting","Region splitting is purely a visual style choice with no performance effect","E-ink panels physically cannot support more than one region","Full refresh is always faster than partial refresh, so region splitting has no benefit"],
+    a:0, ex:"Matching each region's refresh mode to how often its content actually changes gets you both outcomes at once: a fast-updating clock and a ghost-free main layout, without over-paying for either." },
+  links:[
+    {type:"read", label:"Build Your Own Ultra-Low-Power E-Ink Dashboard", url:"https://hackaday.io/project/204840-build-your-own-ultra-low-power-e-ink-dashboard"}
+  ]
+}
+];
+
+const QUIZ = [
+ {q:"Why does an e-ink panel keep showing its image even with its controlling board fully powered off?",
+  o:["It's bistable — the charged particles physically hold their position with zero applied power once moved there","It has its own internal battery built into the panel","The board caches the last image and redraws it instantly on power-up","E-ink panels are not electronic at all"],c:0,
+  ex:"Bistability is a physical property of the particle/fluid system — power is only needed to change the image, never to hold it, unlike an LCD/OLED which needs continuous power just to keep displaying anything."},
+ {q:"Why does a partial refresh often leave visible ghosting on a frequently-changing region, while a full refresh doesn't?",
+  o:["Partial refresh only moves each pixel part of the way toward its target per pass; a target that keeps changing never gets the chance to fully converge, while full refresh snaps every pixel exactly in one pass","Partial refresh is a marketing term with no real technical difference from full refresh","Ghosting only ever happens on panels larger than 4.2 inches","Full refresh is slower specifically because it causes more ghosting, not less"],c:0,
+  ex:"Partial refresh applies an incomplete drive waveform each time — fine against a fixed target given enough repeats, but a constantly-changing target never converges. Full refresh clears everything exactly, at a real time cost."},
+ {q:"With a 65% partial-refresh gain, how does the residual error behave against a target that stops changing?",
+  o:["It shrinks by roughly the same fraction (35%) with each successive partial refresh, converging but never reaching zero in a single step","It stays exactly the same after every refresh, regardless of how many are applied","It doubles with every refresh applied","It becomes fully corrected after exactly one partial refresh, identical to a full refresh"],c:0,
+  ex:"Each partial refresh multiplies the remaining error by (1 - gain). Against a fixed target this converges toward zero, but never lands on it exactly the way a full refresh does in one pass."},
+ {q:"Why does a systemd timer handle a Raspberry Pi that was powered off at the scheduled update time better than a plain cron job?",
+  o:["A systemd timer can be configured to catch up on a missed scheduled run after boot; a cron job simply skips an occurrence it wasn't running for","cron jobs are incapable of running on a Raspberry Pi","systemd timers only work if the Pi never loses power","There's no real behavioral difference between the two"],c:0,
+  ex:"This is a genuine, documented systemd feature (Persistent=true) — a real advantage over cron for a device that might not always be powered on at the exact scheduled moment."},
+ {q:"Why is a busy-loop that polls a weather API every few seconds a poor fit for this project, even though it would technically work?",
+  o:["The display and the underlying data both change far less often than that, so the loop wastes power and API quota for freshness the display can't even show yet","Busy-loops are technically impossible to write in Python","E-ink displays physically cannot receive updates from a loop, only from a timer","Weather APIs block all requests from Raspberry Pi devices specifically"],c:0,
+  ex:"E-ink is designed to be written rarely. A busy-loop polling far faster than the content changes, or than the display could usefully redraw anyway, wastes real resources for no benefit."},
+ {q:"Why does splitting a dashboard's layout into deliberate regions (matched to how often each part changes) produce a better result than always refreshing the whole panel identically?",
+  o:["It avoids paying the multi-second full-refresh cost for a small, fast-changing area while still using full refresh where it's needed to prevent ghosting in the rest of the layout","Region splitting has no measurable effect on refresh time or ghosting","Panels physically stop working if given more than one refresh region","Partial refresh always looks identical to full refresh regardless of region size"],c:0,
+  ex:"Matching refresh mode to each region's actual update frequency gets a responsive fast-changing element (like a clock) and a clean, ghost-free main layout at the same time, without over-paying for either."},
+ {q:"Why does the buying guide warn against a generic 'e-paper' listing with no controller chip specified?",
+  o:["E-ink panels vary enough between controllers that a generic, undocumented one can mean days of driver debugging, even though the panel itself might be fine hardware","All e-paper panels use an identical controller regardless of listing","Controller chip only affects panel color, never software compatibility","Driver libraries are universal across every e-ink controller by industry standard"],c:0,
+  ex:"The controller chip and its driver library are what actually make the panel usable from software — a panel with no documented controller or driver is a real risk regardless of how the panel itself looks."}
+];
+
+/* Key terms — pulled from the bolded/code terms across the four lessons above. */
+const KEY_TERMS = [
+  ["Electrophoretic microcapsule", "Charged black/white particles in fluid; an electric field moves one color to the top surface to set a pixel."],
+  ["Bistable", "The particles hold position with zero power once set — power is only needed to change the image, never to hold it."],
+  ["Reflective display", "Uses ambient light like paper, not a backlight — sunlight-readable and easier on the eyes than a backlit screen."],
+  ["Full refresh", "Clears and redraws the whole panel exactly, with zero residual — slow (several seconds), but precise."],
+  ["Partial refresh", "Updates just a region, fast — but only moves each pixel part of the way toward its target per pass."],
+  ["Ghosting", "Faint remnants of previous content still visible, from partial refreshes that never fully converged."],
+  ["Partial-refresh convergence", "Residual error shrinks by a fixed fraction each partial refresh against a FIXED target — never reaches zero against a target that keeps changing."],
+  ["systemd timer + oneshot service", "A timer fires on a schedule; a oneshot service does one redraw cycle (fetch/render/push) and exits — no idle process between updates."],
+  ["Timer vs cron: missed runs", "A systemd timer can catch up on a missed scheduled run after boot; a plain cron job simply skips it."],
+  ["Busy-loop / polling waste", "Fetching/rendering far faster than the content or display can usefully change wastes power and API quota."],
+  ["\"Small always-on service\"", "The Raspberry-Pi-Tinkering idea of a service that wakes rarely, does very little, and sleeps — applied deliberately here."],
+  ["Layout regions (static vs dynamic)", "Splitting a layout so rarely-changing content uses full refresh and frequently-changing content uses a dedicated partial-refresh region."],
+  ["Panel size tradeoff", "A 2.13\" panel is realistically clock/status only; a 7.5\" panel supports a full layout at the cost of a slower full refresh."],
+  ["Controller chip / driver library", "What actually makes a panel usable from software — an undocumented controller can mean days of driver debugging."],
+  ["SPI control lines", "MOSI, SCLK, CS, DC, RST, BUSY — the same six control lines across all panel-size tiers."],
+  ["Weather/calendar/transit data pull", "Fetched on a schedule matched to how often the data actually changes, not continuously."],
+  ["Picture-frame design mindset", "Designed to be glanced at, not interacted with — information hierarchy over animation or continuous redraw."],
+  ["Full-refresh flash", "The visible full-panel clear/redraw cycle — normal e-ink behavior, not a defect."]
+];
+
+const STATE_KEY = 'chainK_eInkInfoDashboard_v1';
+function loadState(){
+  try{ const raw = localStorage.getItem(STATE_KEY); return raw ? JSON.parse(raw) : null; }
+  catch(e){ return null; }
+}
+function saveState(){
+  try{
+    localStorage.setItem(STATE_KEY, JSON.stringify({
+      answered, quizScore: score, quizDone: [...done], fcKnown: [...fcKnown],
+      popLastScore, popLastTotal, popAttemptsCount, matchBestAttempts,
+      eiPixels, eiTick, eiTimeCost, eiLog
+    }));
+  }catch(e){ /* storage unavailable — progress just won't persist this session */ }
+}
+const SAVED = loadState();
+
+let idx = 0;
+const answered = SAVED && Array.isArray(SAVED.answered) && SAVED.answered.length === LESSONS.length
+  ? SAVED.answered.slice() : new Array(LESSONS.length).fill(false);
+
+function videoCard(l){
+  return `<a class="video-card" href="${l.url}" target="_blank" rel="noopener">
+    <span class="video-card-thumb" style="background-image:url('https://img.youtube.com/vi/${l.vid}/hqdefault.jpg')">
+      <span class="video-card-play">&#9658;</span></span>
+    <span class="video-card-info"><b>${l.label}</b><span>${l.channel} &middot; opens on YouTube</span></span></a>`;
+}
+function renderLinks(links){
+  if(!links || !links.length) return '';
+  const rows = links.map(l => l.type === 'watch'
+    ? videoCard(l)
+    : `<div><span class="kind">${l.type}</span><a href="${l.url}" target="_blank" rel="noopener">${l.label}</a></div>`).join('');
+  return `<div class="links"><h4 style="margin:0 0 6px;font-size:14px;color:var(--accent)">Continue learning</h4>${rows}</div>`;
+}
+function renderQuick(i){
+  const q = LESSONS[i].quick;
+  if(!q) return '';
+  const isDone = answered[i];
+  return `<div class="qc"><h4>Quick check</h4><p style="margin:0 0 6px;font-size:14px">${q.q}</p>
+    <div id="qcopts">${q.choices.map((c,ci)=>`<button class="opt ${isDone && ci===q.a?'correct':''}" data-ci="${ci}" ${isDone?'disabled':''}>${c}</button>`).join('')}</div>
+    <div class="explain" id="qcex" style="${isDone?'display:block':''}">${isDone?q.ex:''}</div></div>`;
+}
+
+const TOOLS = ['Flashcards','Match','Pop Quiz','Cheat Sheet','Refresh & Ghosting Simulator','Report Card'];
+function pillsHTML(){
+  const lessonPills = LESSONS.map((l,i)=>
+    `<button class="pill ${i===idx?'active':''} ${answered[i]?'done':''}" data-i="${i}">${i+1}. ${l.short}</button>`).join('');
+  const quizPill = `<button class="pill ${idx===LESSONS.length?'active':''}" data-i="${LESSONS.length}">Quiz</button>`;
+  const toolPills = TOOLS.map((t,ti)=>{
+    const i = LESSONS.length + 1 + ti;
+    return `<button class="pill tool ${i===idx?'active':''}" data-i="${i}">${t}</button>`;
+  }).join('');
+  return lessonPills + quizPill + toolPills;
+}
+function render(){
+  document.getElementById('pills').innerHTML = pillsHTML();
+  const isQuiz = idx === LESSONS.length;
+  const isTool = idx > LESSONS.length;
+  document.querySelector('main').style.display = (isQuiz || isTool) ? 'none' : 'grid';
+  document.getElementById('quizWrap').style.display = isQuiz ? 'block' : 'none';
+  document.getElementById('toolWrap').style.display = isTool ? 'block' : 'none';
+  document.getElementById('nav').style.display = isTool ? 'none' : 'flex';
+  if(isTool){ renderTool(idx - LESSONS.length - 1); return; }
+  if(isQuiz){ document.getElementById('counter').textContent = 'Final quiz'; renderQuiz(); syncNav(); return; }
+  const L = LESSONS[idx];
+  document.getElementById('lesson').innerHTML =
+    `<h2>${idx+1}. ${L.title}</h2>${L.body}${renderLinks(L.links)}${renderQuick(idx)}`;
+  document.getElementById('practice').innerHTML = L.practice;
+  document.getElementById('counter').textContent = `Lesson ${idx+1} of ${LESSONS.length}`;
+  const opts = document.getElementById('qcopts');
+  if(opts) opts.addEventListener('click', e => {
+    const b = e.target.closest('.opt'); if(!b || b.disabled) return;
+    const q = LESSONS[idx].quick, pick = +b.dataset.ci;
+    [...opts.children].forEach((el,ci)=>{ el.disabled = true;
+      if(ci===q.a) el.classList.add('correct'); else if(ci===pick) el.classList.add('wrong'); });
+    const ex = document.getElementById('qcex'); ex.textContent = q.ex; ex.style.display='block';
+    answered[idx] = true;
+    saveState();
+    syncNav(); render2Pills();
+  });
+  syncNav();
+}
+function render2Pills(){
+  document.querySelectorAll('.pill').forEach((p,i)=>{ if(answered[i]) p.classList.add('done'); });
+}
+function syncNav(){
+  document.getElementById('prev').disabled = idx === 0;
+  const n = document.getElementById('next');
+  const gated = idx < LESSONS.length && !answered[idx];
+  n.disabled = idx > LESSONS.length - 1 || gated;
+  n.textContent = gated ? 'Answer the quick check to continue' : 'Next →';
+}
+
+let score = SAVED && Number.isFinite(SAVED.quizScore) ? SAVED.quizScore : 0;
+let done = new Set(SAVED && Array.isArray(SAVED.quizDone) ? SAVED.quizDone : []);
+function renderQuiz(){
+  document.getElementById('total').textContent = QUIZ.length;
+  document.getElementById('quiz').innerHTML = QUIZ.map((it,qi)=>{
+    const isDone = done.has(qi);
+    return `<div class="q"><p>${qi+1}. ${it.q}</p>
+      <div data-q="${qi}">${it.o.map((o,oi)=>`<button class="opt ${isDone && oi===it.c?'correct':''}" data-q="${qi}" data-o="${oi}" ${isDone?'disabled':''}>${o}</button>`).join('')}</div>
+      <div class="explain" id="qex${qi}" style="${isDone?'display:block':''}">${isDone?it.ex:''}</div></div>`;
+  }).join('');
+  document.getElementById('score').textContent = score;
+}
+document.getElementById('quiz').addEventListener('click', e => {
+  const b = e.target.closest('.opt'); if(!b || b.disabled) return;
+  const qi = +b.dataset.q, oi = +b.dataset.o, it = QUIZ[qi];
+  if(done.has(qi)) return; done.add(qi);
+  b.parentElement.querySelectorAll('.opt').forEach((el,i)=>{ el.disabled = true;
+    if(i===it.c) el.classList.add('correct'); else if(i===oi) el.classList.add('wrong'); });
+  const ex = document.getElementById('qex'+qi); ex.textContent = it.ex; ex.style.display='block';
+  if(oi===it.c){ score++; document.getElementById('score').textContent = score; }
+  saveState();
+});
+
+function shuffled(arr){
+  const a = [...arr];
+  for(let i=a.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]] = [a[j],a[i]]; }
+  return a;
+}
+function renderTool(view){
+  if(view===0) return renderFlash();
+  if(view===1) return renderMatch();
+  if(view===2) return renderPop();
+  if(view===3) return renderCheat();
+  if(view===4) return renderEinkSim();
+  if(view===5) return renderReportCard();
+}
+
+let fcIdx = 0;
+const fcKnown = new Set(SAVED && Array.isArray(SAVED.fcKnown) ? SAVED.fcKnown : []);
+function renderFlash(){
+  const t = KEY_TERMS[fcIdx];
+  document.getElementById('toolWrap').innerHTML = `
+    <h3 style="color:var(--accent);margin-top:0">Flashcards</h3>
+    <p style="color:var(--muted);font-size:13px">Click a card to flip it. ${fcKnown.size} / ${KEY_TERMS.length} marked known.</p>
+    <div class="flash-stage"><div class="flash-card" id="flashCard">
+      <div class="flash-face flash-front">${t[0]}</div>
+      <div class="flash-face flash-back">${t[1]}</div>
+    </div></div>
+    <div class="flash-controls">
+      <button class="ghost" id="fcPrev">&larr; Prev</button>
+      <span class="counter" style="margin:0 6px">${fcIdx+1} / ${KEY_TERMS.length}</span>
+      <button class="ghost" id="fcKnow">${fcKnown.has(fcIdx) ? '✓ Known' : 'Mark known'}</button>
+      <button class="ghost" id="fcNext">Next &rarr;</button>
+    </div>`;
+  document.getElementById('flashCard').onclick = () => document.getElementById('flashCard').classList.toggle('flipped');
+  document.getElementById('fcPrev').onclick = () => { fcIdx = (fcIdx - 1 + KEY_TERMS.length) % KEY_TERMS.length; renderFlash(); };
+  document.getElementById('fcNext').onclick = () => { fcIdx = (fcIdx + 1) % KEY_TERMS.length; renderFlash(); };
+  document.getElementById('fcKnow').onclick = () => {
+    if(fcKnown.has(fcIdx)) fcKnown.delete(fcIdx); else fcKnown.add(fcIdx);
+    saveState(); renderFlash();
+  };
+}
+
+let matchPairs = [], matchTermOrder = [], matchDefOrder = [], matchSel = null, matchMatched = new Set(), matchAttempts = 0;
+let matchBestAttempts = SAVED && Number.isFinite(SAVED.matchBestAttempts) ? SAVED.matchBestAttempts : null;
+function newMatchRound(){
+  const n = Math.min(8, KEY_TERMS.length);
+  const idxs = shuffled([...Array(KEY_TERMS.length).keys()]).slice(0, n);
+  matchPairs = idxs.map(i => ({ key:i, term:KEY_TERMS[i][0], def:KEY_TERMS[i][1] }));
+  matchTermOrder = shuffled(matchPairs);
+  matchDefOrder = shuffled(matchPairs);
+  matchSel = null; matchMatched = new Set(); matchAttempts = 0;
+}
+function matchBtn(p, side){
+  const isMatched = matchMatched.has(p.key);
+  const isSel = matchSel && matchSel.key === p.key && matchSel.side === side;
+  const label = side === 'term' ? p.term : p.def;
+  return `<button class="match-btn ${isMatched?'matched':''} ${isSel?'sel':''}" data-key="${p.key}" data-side="${side}" ${isMatched?'disabled':''}>${label}</button>`;
+}
+function matchStatusText(){
+  if(matchMatched.size === matchPairs.length) return `Solved in ${matchAttempts} attempts!`;
+  return `Match each term to its definition. Attempts: ${matchAttempts}`;
+}
+function renderMatch(){
+  if(!matchPairs.length) newMatchRound();
+  document.getElementById('toolWrap').innerHTML = `
+    <h3 style="color:var(--accent);margin-top:0">Match</h3>
+    <p style="color:var(--muted);font-size:13px" id="matchStatus">${matchStatusText()}</p>
+    <div class="match-grid">
+      <div class="match-col">${matchTermOrder.map(p => matchBtn(p,'term')).join('')}</div>
+      <div class="match-col">${matchDefOrder.map(p => matchBtn(p,'def')).join('')}</div>
+    </div>
+    <button class="ghost" id="matchNew" style="margin-top:14px">New round</button>`;
+  document.querySelectorAll('.match-btn').forEach(b => b.addEventListener('click', onMatchClick));
+  document.getElementById('matchNew').onclick = () => { newMatchRound(); renderMatch(); };
+}
+function onMatchClick(e){
+  const b = e.currentTarget;
+  const key = +b.dataset.key, side = b.dataset.side;
+  if(matchMatched.has(key)) return;
+  if(!matchSel || matchSel.side === side){ matchSel = { key, side }; renderMatch(); return; }
+  matchAttempts++;
+  if(matchSel.key === key){
+    matchMatched.add(key);
+    matchSel = null;
+    if(matchMatched.size === matchPairs.length){
+      if(matchBestAttempts === null || matchAttempts < matchBestAttempts) matchBestAttempts = matchAttempts;
+      saveState();
+    }
+    renderMatch();
+  } else {
+    b.classList.add('wrong');
+    const status = document.getElementById('matchStatus');
+    if(status) status.textContent = `Not quite. Attempts: ${matchAttempts}`;
+    setTimeout(() => { matchSel = null; renderMatch(); }, 500);
+  }
+}
+
+function popPool(){
+  const fromLessons = LESSONS.filter(l => l.quick).map(l => ({ q:l.quick.q, opts:l.quick.choices, correct:l.quick.a, ex:l.quick.ex }));
+  const fromQuiz = QUIZ.map(q => ({ q:q.q, opts:q.o, correct:q.c, ex:q.ex }));
+  return [...fromLessons, ...fromQuiz];
+}
+let popSet = [], popIdx = 0, popScore = 0, popDone = false;
+let popLastScore = SAVED && Number.isFinite(SAVED.popLastScore) ? SAVED.popLastScore : null;
+let popLastTotal = SAVED && Number.isFinite(SAVED.popLastTotal) ? SAVED.popLastTotal : null;
+let popAttemptsCount = SAVED && Number.isFinite(SAVED.popAttemptsCount) ? SAVED.popAttemptsCount : 0;
+function newPop(){
+  const pool = shuffled(popPool());
+  popSet = pool.slice(0, Math.min(5, pool.length));
+  popIdx = 0; popScore = 0; popDone = false;
+}
+function renderPop(){
+  if(!popSet.length) newPop();
+  if(popDone){
+    document.getElementById('toolWrap').innerHTML = `
+      <h3 style="color:var(--accent);margin-top:0">Pop Quiz</h3>
+      <p>Score: <b>${popScore} / ${popSet.length}</b></p>
+      <button class="ghost" id="popAgain">Try another 5</button>`;
+    document.getElementById('popAgain').onclick = () => { newPop(); renderPop(); };
+    return;
+  }
+  const it = popSet[popIdx];
+  document.getElementById('toolWrap').innerHTML = `
+    <h3 style="color:var(--accent);margin-top:0">Pop Quiz</h3>
+    <p style="color:var(--muted);font-size:13px">Question ${popIdx+1} of ${popSet.length} &middot; Score so far: ${popScore}</p>
+    <div class="qc"><p style="font-weight:600;font-size:14px;margin:0 0 6px">${it.q}</p>
+      <div id="popOpts">${it.opts.map((o,oi)=>`<button class="opt" data-oi="${oi}">${o}</button>`).join('')}</div>
+      <div class="explain" id="popEx"></div></div>
+    <button class="ghost" id="popNext" style="margin-top:12px;display:none">Next &rarr;</button>`;
+  document.getElementById('popOpts').addEventListener('click', e => {
+    const b = e.target.closest('.opt'); if(!b || b.disabled) return;
+    const oi = +b.dataset.oi;
+    [...document.getElementById('popOpts').children].forEach((el,i) => {
+      el.disabled = true;
+      if(i===it.correct) el.classList.add('correct'); else if(i===oi) el.classList.add('wrong');
+    });
+    if(oi === it.correct) popScore++;
+    const ex = document.getElementById('popEx'); ex.textContent = it.ex; ex.style.display = 'block';
+    document.getElementById('popNext').style.display = 'inline-block';
+  });
+  document.getElementById('popNext').onclick = () => {
+    popIdx++;
+    if(popIdx >= popSet.length){
+      popDone = true;
+      popLastScore = popScore; popLastTotal = popSet.length; popAttemptsCount++;
+      saveState();
+    }
+    renderPop();
+  };
+}
+
+const CHEATSHEET = `
+  <h3 style="color:var(--accent);margin-top:0">Cheat Sheet</h3>
+  <table class="cheat">
+    <tr><th>Task / Fact</th><th>Rule</th></tr>
+    <tr><td>Why image persists with no power</td><td>Bistable — particles hold position until deliberately re-driven</td></tr>
+    <tr><td>Full refresh</td><td>Clears + redraws exactly, no ghosting, several seconds</td></tr>
+    <tr><td>Partial refresh</td><td>Fast, region-only, but only moves part-way each pass</td></tr>
+    <tr><td>Ghosting fix</td><td>Periodic full refresh — not more partial refreshes</td></tr>
+    <tr><td>Convergence math</td><td>Remaining error × (1 − gain) per partial refresh, against a FIXED target</td></tr>
+    <tr><td>Scheduling</td><td>systemd timer + oneshot service — never a busy-loop or naive cron</td></tr>
+    <tr><td>Timer vs cron</td><td>Timer can catch up a missed run after boot; cron just skips it</td></tr>
+    <tr><td>Layout design</td><td>Split static (full refresh) vs dynamic (partial refresh) regions</td></tr>
+    <tr><td>Panel size tradeoff</td><td>2.13" = clock/status only; 7.5" = full layout, slower full refresh</td></tr>
+    <tr><td>SPI control lines</td><td>MOSI, SCLK, CS, DC, RST, BUSY</td></tr>
+    <tr><td>Buying red flag</td><td>"e-paper" listing with no controller chip / driver library specified</td></tr>
+  </table>
+  <p style="color:var(--muted);font-size:12px;margin-top:10px">Full lesson content covers the reasoning
+     behind each row — this page is for last-minute recall, not first-time learning.</p>`;
+function renderCheat(){ document.getElementById('toolWrap').innerHTML = CHEATSHEET; }
+
+/* Refresh & Ghosting Simulator — this project's own Simulation tab.
+   A 16-pixel strip: 8 "static" pixels (target never changes) and 8
+   "dynamic" pixels (target flips every tick, like a clock digit).
+   Real convergence math — identical to exercises/eink_refresh.py's
+   apply_partial_refresh/apply_full_refresh/ghost_score — drives the
+   displayed grey level of each pixel, not a canned animation. */
+const EI_N = 16, EI_GAIN = 0.65, EI_PARTIAL_COST = 1, EI_FULL_COST = 5;
+function eiDefaultPixels(){
+  return Array.from({length: EI_N}, (_, i) => ({
+    target: i < 8 ? 1 : 0,   // static half starts white; dynamic half starts black
+    displayed: i < 8 ? 1 : 0
+  }));
+}
+let eiPixels = SAVED && Array.isArray(SAVED.eiPixels) && SAVED.eiPixels.length === EI_N ? SAVED.eiPixels : eiDefaultPixels();
+let eiTick = SAVED && Number.isFinite(SAVED.eiTick) ? SAVED.eiTick : 0;
+let eiTimeCost = SAVED && Number.isFinite(SAVED.eiTimeCost) ? SAVED.eiTimeCost : 0;
+let eiLog = SAVED && Array.isArray(SAVED.eiLog) ? SAVED.eiLog : [];
+
+function eiGhostScore(){
+  const sum = eiPixels.reduce((a,p) => a + Math.abs(p.displayed - p.target), 0);
+  return (sum / eiPixels.length) * 100;
+}
+function eiAdvanceTick(){
+  eiTick++;
+  eiPixels.forEach((p,i) => { if(i >= 8) p.target = 1 - p.target; }); // dynamic region's "clock digit" flips
+}
+function eiApplyRefresh(mode){
+  if(mode === 'partial'){
+    eiPixels.forEach(p => { p.displayed = p.displayed + EI_GAIN*(p.target - p.displayed); });
+    eiTimeCost += EI_PARTIAL_COST;
+  } else {
+    eiPixels.forEach(p => { p.displayed = p.target; });
+    eiTimeCost += EI_FULL_COST;
+  }
+  const g = eiGhostScore();
+  eiLog.unshift({ tick: eiTick, mode, ghost: g });
+  if(eiLog.length > 10) eiLog.pop();
+  saveState();
+}
+function eiPixelColor(p){
+  const grey = Math.round((1 - p.displayed) * 255);
+  return `rgb(${grey},${grey},${grey})`;
+}
+function eiRender(){
+  const stripEl = document.getElementById('eiStrip');
+  if(stripEl){
+    stripEl.innerHTML = eiPixels.map((p,i) =>
+      `<div class="eink-px" style="background:${eiPixelColor(p)};${i===8?'margin-left:6px':''}" title="target ${p.target}, displayed ${p.displayed.toFixed(2)}"></div>`
+    ).join('');
+  }
+  const readoutEl = document.getElementById('eiReadout');
+  if(readoutEl){
+    const g = eiGhostScore();
+    readoutEl.innerHTML = `<b>Tick:</b> ${eiTick} &nbsp; <b>Ghost score:</b> ${g.toFixed(1)}% &nbsp; <b>Cumulative refresh-time cost:</b> ${eiTimeCost} units
+      <div class="gauge-bar"><div class="gauge-fill" style="width:${Math.min(100,g)}%"></div></div>`;
+  }
+  const logEl = document.getElementById('eiLog');
+  if(logEl){
+    logEl.innerHTML = eiLog.map(l => `<div>tick ${l.tick} &middot; ${l.mode} refresh &middot; ghost ${l.ghost.toFixed(1)}%</div>`).join('') || '<div>No refreshes yet.</div>';
+  }
+}
+function renderEinkSim(){
+  document.getElementById('toolWrap').innerHTML = `
+    <h3 style="color:var(--accent);margin-top:0">Refresh &amp; Ghosting Simulator</h3>
+    <p style="color:var(--muted);font-size:13px">A 16-pixel strip — left 8 are "static" content (never
+       changes), right 8 are "dynamic" content (like a clock digit, flips every tick). Real convergence
+       math from <code>exercises/eink_refresh.py</code> drives every pixel; nothing here is a canned
+       animation.</p>
+    <div class="eink-section">
+      <div class="eink-strip" id="eiStrip"></div>
+      <div class="eink-row">
+        <button class="ghost" id="eiTickBtn">Advance tick (clock digit flips)</button>
+        <button class="ghost" id="eiPartialBtn">Apply partial refresh</button>
+        <button class="ghost" id="eiFullBtn">Apply full refresh</button>
+        <button class="ghost" id="eiResetBtn">Reset simulation</button>
+      </div>
+      <div class="eink-readout" id="eiReadout"></div>
+      <div class="eink-log" id="eiLog"></div>
+    </div>`;
+  eiRender();
+  document.getElementById('eiTickBtn').onclick = () => { eiAdvanceTick(); saveState(); eiRender(); };
+  document.getElementById('eiPartialBtn').onclick = () => { eiApplyRefresh('partial'); eiRender(); };
+  document.getElementById('eiFullBtn').onclick = () => { eiApplyRefresh('full'); eiRender(); };
+  document.getElementById('eiResetBtn').onclick = () => {
+    eiPixels = eiDefaultPixels(); eiTick = 0; eiTimeCost = 0; eiLog = [];
+    saveState(); eiRender();
+  };
+}
+
+function letterGrade(pct){
+  if(pct === null) return { text:'—', cls:'grade-dash' };
+  if(pct >= 90) return { text:'A', cls:'grade-A' };
+  if(pct >= 80) return { text:'B', cls:'grade-B' };
+  if(pct >= 70) return { text:'C', cls:'grade-C' };
+  if(pct >= 60) return { text:'D', cls:'grade-D' };
+  return { text:'F', cls:'grade-F' };
+}
+function renderReportCard(){
+  const lessonsDone = answered.filter(Boolean).length;
+  const quizPct = QUIZ.length ? Math.round((score / QUIZ.length) * 100) : null;
+  const quizAttempted = done.size > 0;
+  const grade = letterGrade(quizAttempted ? quizPct : null);
+  const overallItems = lessonsDone + (quizAttempted ? 1 : 0);
+  const overallTotal = LESSONS.length + 1;
+  const overallPct = Math.round((overallItems / overallTotal) * 100);
+  const now = new Date();
+  document.getElementById('toolWrap').innerHTML = `
+    <div class="report-card">
+      <h3 style="color:var(--accent);margin-top:0">Report Card</h3>
+      <p style="color:var(--muted);font-size:12px;margin-top:-6px">E-Ink Info Dashboard &middot; generated ${now.toLocaleDateString()} ${now.toLocaleTimeString()}</p>
+      <div class="report-overall">
+        <span class="big ${grade.cls}">${grade.text}</span>
+        <span style="color:var(--muted);font-size:13px">Final quiz grade${quizAttempted ? '' : ' (not yet taken)'}</span>
+      </div>
+      <h4>Lessons</h4>
+      <div class="report-row"><span>Quick checks completed</span><span class="grade">${lessonsDone} / ${LESSONS.length}</span></div>
+      <h4>Final Quiz</h4>
+      <div class="report-row"><span>Score</span><span class="grade">${quizAttempted ? `${score} / ${QUIZ.length} (${quizPct}%)` : 'Not attempted'}</span></div>
+      <h4>Pop Quiz</h4>
+      <div class="report-row"><span>Most recent 5-question run</span><span class="grade">${popLastScore !== null ? `${popLastScore} / ${popLastTotal}` : 'Not attempted'}</span></div>
+      <div class="report-row"><span>Runs completed</span><span class="grade">${popAttemptsCount}</span></div>
+      <h4>Flashcards</h4>
+      <div class="report-row"><span>Terms marked known</span><span class="grade">${fcKnown.size} / ${KEY_TERMS.length}</span></div>
+      <h4>Match Game</h4>
+      <div class="report-row"><span>Best round (fewest attempts)</span><span class="grade">${matchBestAttempts !== null ? matchBestAttempts : 'Not completed'}</span></div>
+      <h4>Overall</h4>
+      <div class="report-row"><span>Lessons + quiz completed</span><span class="grade">${overallItems} / ${overallTotal} (${overallPct}%)</span></div>
+      <button class="ghost" id="printBtn">🖨️ Print / Save as PDF</button>
+      <p style="color:var(--muted);font-size:11px;margin-top:8px">In the print dialog, choose <b>Save as PDF</b> and
+         save it into this project's <code>docs/</code> folder to keep a dated record.</p>
+    </div>`;
+  document.getElementById('printBtn').onclick = () => window.print();
+}
+
+document.getElementById('pills').addEventListener('click', e => {
+  const p = e.target.closest('.pill'); if(!p) return; idx = +p.dataset.i; render();
+});
+document.getElementById('prev').onclick = () => { if(idx>0){ idx--; render(); } };
+document.getElementById('next').onclick = () => { if(idx<LESSONS.length){ idx++; render(); } };
+render();
+</script>
+</body></html>
